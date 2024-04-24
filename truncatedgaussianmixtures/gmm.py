@@ -1,6 +1,6 @@
 from .julia_import import jl
 from dataclasses import dataclass
-from .conversions import jl_to_pandas
+from .conversions import jl_to_pandas, pandas_to_jl
 from .julia_helpers import jl_array
 import juliacall
 import numpy as np
@@ -83,6 +83,33 @@ class TGMM:
 			return jl_to_pandas(df_out)
 		else:
 			return jl_to_pandas(jl.DataFrame(jl.collect(jl.transpose(X)), self.cols))
+
+	def sample_with_fixed_columns(self, df, analytic_columns, sampled_columns):
+		df_out = df.copy()
+		analytic_columns_transformed = analytic_columns.copy()
+		if self.transformation is not None:
+			df_out = jl_to_pandas(jl.TruncatedGaussianMixtures.forward(self.transformation, pandas_to_jl(df_out[self.domain_cols])))
+			df_out["components"] = df["components"]
+			domain_cols_to_image_cols = {k:v for k,v in zip(self.domain_cols, self.image_cols)}
+			analytic_columns_transformed = [domain_cols_to_image_cols[a] for a in analytic_columns]
+		cols = [col for col in df.columns if col not in ["components"]]
+		indices = {cols[i] : i for i in range(len(cols))}
+		analytic_indices = [indices[col] for col in analytic_columns]
+		components = range(len(self.weights))
+
+		for component in components:
+			for i,k in enumerate(analytic_indices):
+				in_component = (df_out["components"] == (component + 1))
+				N = in_component.sum()
+				df_out.loc[in_component, analytic_columns_transformed[i]] = jl_array(jl.rand(self.gmm.components[component], N)[k, :])
+
+		if self.transformation is not None:
+			df_out = jl_to_pandas(jl.TruncatedGaussianMixtures.inverse(self.transformation, pandas_to_jl(df_out[self.image_cols])))
+			df_out["components"] = df["components"]
+
+		return df_out
+
+
 
 
 	

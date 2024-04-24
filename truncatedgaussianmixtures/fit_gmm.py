@@ -55,8 +55,8 @@ def fit_gmm(data : Union[pd.DataFrame, np.array],
 
 	if (transformation is not None) and (annealing_schedule is None):
 		gmm, df = TruncatedGaussianMixtures.fit_gmm(data, N, a, b, transformation, **kwargs)
-		return TGMM(gmm, cols), jl_to_pandas(df)
+		return TGMM(gmm, cols, transformation=transformation), jl_to_pandas(df)
 
 	if (transformation is not None) and (annealing_schedule is not None):
 		gmm, df =TruncatedGaussianMixtures.fit_gmm(data, N, a, b, transformation, annealing_schedule, **kwargs)
-		return TGMM(gmm, cols), jl_to_pandas(df)
+		return TGMM(gmm, cols, transformation=transformation), jl_to_pandas(df)

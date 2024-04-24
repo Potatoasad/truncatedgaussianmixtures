@@ -1,2 +1,2 @@
 # truncatedgaussianmixtures
- Fit gaussian mixtures using truncated gaussian kernels.Python wrapper around the julia package TruncatedGaussianMixtures.jl
+ Fit gaussian mixture models using truncated gaussian kernels. This is a python wrapper around the julia package TruncatedGaussianMixtures.jl

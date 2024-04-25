@@ -73,7 +73,7 @@ def force_install_tgmm():
 #Pkg.add(url="https://github.com/Potatoasad/TruncatedGaussianMixtures.jl")
 
 ### DEV 
-Pkg.develop(path="/Users/asadh/Documents/Github/TruncatedGaussianMixtures.jl")
+#Pkg.develop(path="/Users/asadh/Documents/Github/TruncatedGaussianMixtures.jl")
 
 ## Check if TGM is installed:
 tgmm_is_installed = any( x.name == "TruncatedGaussianMixtures" for x in jl.values(jl.Pkg.dependencies()) )

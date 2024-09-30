@@ -1,6 +1,7 @@
 import os
 import sys
 import warnings
+from .julia_helpers import *
 
 # Check if JuliaCall is already loaded, and if so, warn the user
 # about the relevant environment variables. If not loaded,
@@ -65,10 +66,15 @@ elif autoload_extensions not in {"no", "yes", ""}:
 jl.seval("using Pkg: Pkg")
 Pkg = jl.Pkg
 
-def force_install_tgmm():
-    Pkg.rm("TruncatedGaussianMixtures")
-    Pkg.add("StatsBase")
+needed_pkgs = ["Distributions", "LogExpFunctions", "Clustering", "LinearAlgebra", "Distributions", "MvNormalCDF", 
+               "StatsBase", "InvertedIndices", "ProgressMeter", "DataFrames", "DiffRules", "ForwardDiff", "Roots"]
+
+def force_install_tgmm(;force=True, needed_pkgs=needed_pkgs):
+    if force:
+        Pkg.rm("TruncatedGaussianMixtures")
     Pkg.add(url="https://github.com/Potatoasad/TruncatedGaussianMixtures.jl")
+    for pkgname in needed_pkgs:
+        Pkg.add(pkgname)
 
 #Pkg.rm("TruncatedGaussianMixtures")
 #Pkg.add(url="https://github.com/Potatoasad/TruncatedGaussianMixtures.jl")
@@ -80,7 +86,7 @@ def force_install_tgmm():
 tgmm_is_installed = any( x.name == "TruncatedGaussianMixtures" for x in jl.values(jl.Pkg.dependencies()) )
 if not tgmm_is_installed:
     Pkg.add(url="https://github.com/Potatoasad/TruncatedGaussianMixtures.jl")
-    Pkg.add("StatsBase")
+    for 
 
 jl.seval("using TruncatedGaussianMixtures: TruncatedGaussianMixtures")
 jl.seval("using TruncatedGaussianMixtures")

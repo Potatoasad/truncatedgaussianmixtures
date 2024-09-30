@@ -33,13 +33,19 @@ def fit_gmm(data : Union[pd.DataFrame, np.array],
 			annealing_schedule : Optional[Any] = None,
 			ignore_columns : Optional[List] = None
 			):
-	cols = None
-	if isinstance(data, pd.DataFrame):
-		ignored_cols = getattr(transformation, 'ignore_columns', ignore_columns)
-		cols = [col for col in data.columns if col not in ignored_cols]
+	if ignore_columns is not None:
+		cols = [col for col in data.columns if col not in ignore_columns]
+		ignored_cols = ignore_columns
+	else:
+		cols = list(data.columns)
+		ignored_cols = []
 
 	if (ignore_columns is not None) and (transformation is None):
 		transformation = Transformation(cols, "(x...) -> identity(x)", cols, "(x...) -> identity(x)", ignore_columns)
+
+	if isinstance(data, pd.DataFrame):
+		ignored_cols = getattr(transformation, 'ignore_columns', [])
+		cols = [col for col in data.columns if col not in ignored_cols]
 
 	data = convert_array_or_pandas(data)
 	a = jl_convert(jl.Vector[jl.Float64], a); b = jl_convert(jl.Vector[jl.Float64], b);

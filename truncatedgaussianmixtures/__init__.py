@@ -3,6 +3,8 @@
 # old libraries:
 from .julia_import import jl, TruncatedGaussianMixtures, force_install_tgmm  # isort:skip
 
+force_install_tgmm(force=False)
+
 jl.seval("using StatsBase: Weights")
 
 def jlarray(x):
@@ -10,6 +12,7 @@ def jlarray(x):
 
 #fit_gmm  = TruncatedGaussianMixtures.fit_gmm
 #transformation_jl  = TruncatedGaussianMixtures.Transformation
+
 
 
 from .transformations import *

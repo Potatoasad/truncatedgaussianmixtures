@@ -40,8 +40,6 @@ def fit_gmm(data : Union[pd.DataFrame, np.array],
 		cols = list(data.columns)
 		ignored_cols = []
 
-	print(ignore_columns)
-
 	if (ignore_columns is not None) and (transformation is None):
 		transformation = Transformation(cols, "(x...) -> identity(x)", cols, "(x...) -> identity(x)", ignore_columns)
 
@@ -49,7 +47,7 @@ def fit_gmm(data : Union[pd.DataFrame, np.array],
 		ignored_cols = getattr(transformation, 'ignore_columns', [])
 	else:
 		ignored_cols = []
-		
+
 	if isinstance(data, pd.DataFrame):
 		cols = [col for col in data.columns if col not in ignored_cols]
 

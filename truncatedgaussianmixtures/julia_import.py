@@ -67,6 +67,7 @@ Pkg = jl.Pkg
 
 def force_install_tgmm():
     Pkg.rm("TruncatedGaussianMixtures")
+    Pkg.add("StatsBase")
     Pkg.add(url="https://github.com/Potatoasad/TruncatedGaussianMixtures.jl")
 
 #Pkg.rm("TruncatedGaussianMixtures")

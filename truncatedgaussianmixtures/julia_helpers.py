@@ -4,7 +4,8 @@ import numpy as np
 from juliacall import convert as jl_convert  # type: ignore
 
 #from .deprecated import init_julia, install
-from .julia_import import jl
+#from .julia_import import jl
+from juliacall import Main as jl
 
 #jl.seval("using Serialization: Serialization")
 jl.seval("using PythonCall: PythonCall")

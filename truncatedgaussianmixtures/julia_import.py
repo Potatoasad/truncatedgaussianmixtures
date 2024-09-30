@@ -69,7 +69,7 @@ Pkg = jl.Pkg
 needed_pkgs = ["Distributions", "LogExpFunctions", "Clustering", "LinearAlgebra", "Distributions", "MvNormalCDF", 
                "StatsBase", "InvertedIndices", "ProgressMeter", "DataFrames", "DiffRules", "ForwardDiff", "Roots"]
 
-def force_install_tgmm(force=True, needed_pkgs=[]):
+def force_install_tgmm(force=True, needed_pkgs=needed_pkgs):
     if force:
         Pkg.rm("TruncatedGaussianMixtures")
     Pkg.add(url="https://github.com/Potatoasad/TruncatedGaussianMixtures.jl")

@@ -69,7 +69,7 @@ Pkg = jl.Pkg
 needed_pkgs = ["Distributions", "LogExpFunctions", "Clustering", "LinearAlgebra", "Distributions", "MvNormalCDF", 
                "StatsBase", "InvertedIndices", "ProgressMeter", "DataFrames", "DiffRules", "ForwardDiff", "Roots"]
 
-def force_install_tgmm(;force=True, needed_pkgs=needed_pkgs):
+def force_install_tgmm(force=True, needed_pkgs=[]):
     if force:
         Pkg.rm("TruncatedGaussianMixtures")
     Pkg.add(url="https://github.com/Potatoasad/TruncatedGaussianMixtures.jl")
@@ -85,8 +85,8 @@ def force_install_tgmm(;force=True, needed_pkgs=needed_pkgs):
 ## Check if TGM is installed:
 tgmm_is_installed = any( x.name == "TruncatedGaussianMixtures" for x in jl.values(jl.Pkg.dependencies()) )
 if not tgmm_is_installed:
-    Pkg.add(url="https://github.com/Potatoasad/TruncatedGaussianMixtures.jl")
-    for 
+    force_install_tgmm(force=False, needed_pkgs=needed_pkgs)
+    
 
 jl.seval("using TruncatedGaussianMixtures: TruncatedGaussianMixtures")
 jl.seval("using TruncatedGaussianMixtures")

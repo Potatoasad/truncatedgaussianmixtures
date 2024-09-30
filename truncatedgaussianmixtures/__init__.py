@@ -8,7 +8,7 @@ jl.seval("using StatsBase: Weights")
 def jlarray(x):
 	return jl.pyconvert(jl.seval("Array"), x)
 
-fit_gmm  = TruncatedGaussianMixtures.fit_gmm
+#fit_gmm  = TruncatedGaussianMixtures.fit_gmm
 #transformation_jl  = TruncatedGaussianMixtures.Transformation
 
 

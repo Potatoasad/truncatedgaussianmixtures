@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 from .conversions import *
 from .gmm import *
+from .transformations import *
 
 
 def convert_array_or_pandas(data):
@@ -26,37 +27,50 @@ def fit_gmm(data : Union[pd.DataFrame, np.array],
 			cov : str = "diag", tol : float = 1e-6, MAX_REPS : int = 200,
 			verbose : bool = False, progress : bool = True,
 			block_structure : Optional[Union[np.array, List]] = None,
+			boundary_unbiasing : Optional[Any] = None,
 			weights : Optional[Union[np.array, List]] = None,
 			transformation : Optional[Any] = None,
-			annealing_schedule : Optional[Any] = None
+			annealing_schedule : Optional[Any] = None,
+			ignore_columns : Optional[List] = None
 			):
 	cols = None
 	if isinstance(data, pd.DataFrame):
-		ignored_cols = getattr(transformation, 'ignore_columns', [])
+		ignored_cols = getattr(transformation, 'ignore_columns', ignore_columns)
 		cols = [col for col in data.columns if col not in ignored_cols]
+
+	if (ignore_columns is not None) and (transformation is None):
+		transformation = Transformation(cols, "(x...) -> identity(x)", cols, "(x...) -> identity(x)", ignore_columns)
+
 	data = convert_array_or_pandas(data)
 	a = jl_convert(jl.Vector[jl.Float64], a); b = jl_convert(jl.Vector[jl.Float64], b);
+	#weights = jl_convert(jl.Vector[jl.Float64], weights)
 
 
 	kwargs = dict(cov=cov, verbose=verbose, tol=tol, MAX_REPS=MAX_REPS, progress=progress)
+
+	if boundary_unbiasing is not None:
+		boundary_unbiasing_jl = jl.TruncatedGaussianMixtures.BoundaryUnbiasing(boundary_unbiasing["structure"], 
+												  boundary_unbiasing.get("bandwidth_scale", 1.0))
+		kwargs['unbiasing'] = boundary_unbiasing_jl
+
 	if block_structure is not None:
-		kwargs["block_structure"] = block_structure
+		kwargs["block_structure"] =  jl_convert(jl.Vector[jl.Int64], block_structure)
 
 	if weights is not None:
 		kwargs["weights"] = make_statsbase_weights(weights)
 
 	if (transformation is None) and (annealing_schedule is None):
 		gmm = TruncatedGaussianMixtures.fit_gmm(data, N, a, b, **kwargs)
-		return TGMM(gmm, cols)
+		return TGMM(gmm, cols, data=jl_to_pandas(data), block_structure=block_structure, cov=cov)
 
 	if (transformation is None) and (annealing_schedule is not None):
 		gmm = TruncatedGaussianMixtures.fit_gmm(data, N, a, b, annealing_schedule, **kwargs)
-		return TGMM(gmm, cols)
+		return TGMM(gmm, cols, data=jl_to_pandas(data), block_structure=block_structure, cov=cov)
 
 	if (transformation is not None) and (annealing_schedule is None):
-		gmm, df = TruncatedGaussianMixtures.fit_gmm(data, N, a, b, transformation, **kwargs)
-		return TGMM(gmm, cols, transformation=transformation), jl_to_pandas(df)
+		gmm, df = TruncatedGaussianMixtures.fit_gmm(data, N, a, b, transformation.julia_object, **kwargs)
+		return TGMM(gmm, cols, transformation=transformation, data=jl_to_pandas(df), block_structure=block_structure, cov=cov)
 
 	if (transformation is not None) and (annealing_schedule is not None):
-		gmm, df =TruncatedGaussianMixtures.fit_gmm(data, N, a, b, transformation, annealing_schedule, **kwargs)
-		return TGMM(gmm, cols, transformation=transformation), jl_to_pandas(df)
+		gmm, df =TruncatedGaussianMixtures.fit_gmm(data, N, a, b, transformation.julia_object, annealing_schedule, **kwargs)
+		return TGMM(gmm, cols, transformation=transformation, data=jl_to_pandas(df), block_structure=block_structure, cov=cov)

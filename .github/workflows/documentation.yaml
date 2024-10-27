@@ -14,26 +14,23 @@ jobs:
       - name: Install dependencies
         run: |
           pip install --upgrade pip
-          sudo apt-get install -y pandoc 
-          pip install numpy pandas scipy jax jaxlib tqdm blackjax
+          sudo apt-get install -y pandoc
           pip install sphinx sphinx_rtd_theme myst_parser nbsphinx pygments myst_parser
           pip install ipython
       - name: Clean before build and transfer notebooks
         run: |
           rm -rf _build/
-          cp *.ipynb ./docs
       - name: Sphinx build
         run: |
-          sphinx-apidoc -o ./docs ./quicksampler
           sphinx-build ./docs _build
       - name: Create .nojekyll file
         run: |
           touch _build/.nojekyll
       - name: Copy PNG Images
         run: |
-          cp *.png _build/
-          cp *.jpeg _build/
-          cp *.jpg _build/
+          cp *.png _build/ | true
+          cp *.jpeg _build/ | true
+          cp *.jpg _build/ | true
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}

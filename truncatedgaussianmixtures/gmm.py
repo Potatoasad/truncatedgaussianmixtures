@@ -22,6 +22,7 @@ class TGMM:
 		self._means = np.stack([jl_array(a.normal.μ) for a in self.gmm.components])
 		self._covariances = np.stack([jl_array(a.normal.Σ) for a in self.gmm.components])
 		jl.seval("using LinearAlgebra")
+		jl.seval("using Distributions")
 		self._std_deviations = np.sqrt(np.stack([jl_array(jl.diag(a.normal.Σ)) for a in self.gmm.components]))
 		self._weights = np.array(self.gmm.prior.p)
 		self.d = self.means.shape[-1]
@@ -54,6 +55,28 @@ class TGMM:
 	@property
 	def weights(self):
 		return self._weights
+
+	def logpdf(self, x):
+		if isinstance(x, np.ndarray):
+			if len(x.shape) == 1:
+				return jl.logpdf(self.gmm, jl_array(x.reshape(1, len(x))))
+			else:
+				return jl.logpdf(self.gmm, jl_array(x.transpose()))
+		elif isinstance(x, float) or isinstance(x, int):
+			return jl.logpdf(self.gmm, jl_array(np.array([x])))
+		else:
+			raise ValueError("KDE can only accept a numpy array or a float")
+
+	def pdf(self, x):
+		if isinstance(x, np.ndarray):
+			if len(x.shape) == 1:
+				return jl.pdf(self.gmm, jl_array(x.reshape(1, len(x))))
+			else:
+				return jl.pdf(self.gmm, jl_array(x.transpose()))
+		elif isinstance(x, float) or isinstance(x, int):
+			return jl.pdf(self.gmm, jl_array(np.array([x])))
+		else:
+			raise ValueError("KDE can only accept a numpy array or a float")
 
 	def data_product(self, analytic_columns, sampled_columns, N=1000):
 		df = self.data

@@ -7,11 +7,12 @@ from .julia_helpers import *
 # about the relevant environment variables. If not loaded,
 # set up sensible defaults.
 if "juliacall" in sys.modules:
-    warnings.warn(
-        "juliacall module already imported. "
-        "Make sure that you have set the environment variable `PYTHON_JULIACALL_HANDLE_SIGNALS=yes` to avoid segfaults. "
-        "Also note that truncatedgaussianmixtures will not be able to configure `PYTHON_JULIACALL_THREADS` or `PYTHON_JULIACALL_OPTLEVEL` for you."
-    )
+    #warnings.warn(
+    #    "juliacall module already imported. "
+    #    "Make sure that you have set the environment variable `PYTHON_JULIACALL_HANDLE_SIGNALS=yes` to avoid segfaults. "
+    #    "Also note that truncatedgaussianmixtures will not be able to configure `PYTHON_JULIACALL_THREADS` or `PYTHON_JULIACALL_OPTLEVEL` for you."
+    #)
+    pass
 else:
     # Required to avoid segfaults (https://juliapy.github.io/PythonCall.jl/dev/faq/)
     if os.environ.get("PYTHON_JULIACALL_HANDLE_SIGNALS", "yes") != "yes":
@@ -69,23 +70,25 @@ Pkg = jl.Pkg
 needed_pkgs = ["Distributions", "LogExpFunctions", "Clustering", "LinearAlgebra", "Distributions", "MvNormalCDF", 
                "StatsBase", "InvertedIndices", "ProgressMeter", "DataFrames", "DiffRules", "ForwardDiff", "Roots"]
 
-def force_install_tgmm(force=True, needed_pkgs=needed_pkgs):
+def force_install_tgmm(force=True, install_pkgs=False, needed_pkgs=needed_pkgs):
     if force:
         Pkg.rm("TruncatedGaussianMixtures")
-    Pkg.add(url="https://github.com/Potatoasad/TruncatedGaussianMixtures.jl")
-    for pkgname in needed_pkgs:
-        Pkg.add(pkgname)
+    if install_pkgs:
+        Pkg.add(url="https://github.com/Potatoasad/TruncatedGaussianMixtures.jl")
+        for pkgname in needed_pkgs:
+            Pkg.add(pkgname)
 
 #Pkg.rm("TruncatedGaussianMixtures")
 #Pkg.add(url="https://github.com/Potatoasad/TruncatedGaussianMixtures.jl")
 
 ### DEV 
-#Pkg.develop(path="/Users/asadh/Documents/Github/TruncatedGaussianMixtures.jl")
+#Pkg.develop(path="/Users/asadh/Documents/Github/TruncatedGaussianMixtures.jl" ,io=jl.devnull)
 
 ## Check if TGM is installed:
 tgmm_is_installed = any( x.name == "TruncatedGaussianMixtures" for x in jl.values(jl.Pkg.dependencies()) )
 if not tgmm_is_installed:
-    force_install_tgmm(force=False, needed_pkgs=needed_pkgs)
+    print("Installing TruncatedGaussianMixtures")
+    force_install_tgmm(force=False, install_pkgs=True, needed_pkgs=needed_pkgs)
     
 
 jl.seval("using TruncatedGaussianMixtures: TruncatedGaussianMixtures")

@@ -15,7 +15,7 @@ jobs:
         run: |
           pip install --upgrade pip
           sudo apt-get install -y pandoc
-          pip install sphinx sphinx_rtd_theme myst_parser nbsphinx pygments myst_parser
+          pip install sphinx sphinx_rtd_theme myst_parser nbsphinx pygments myst_parser sphinxcontrib-bibtex
           pip install ipython
       - name: Clean before build and transfer notebooks
         run: |

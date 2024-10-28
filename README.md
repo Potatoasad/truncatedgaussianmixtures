@@ -1,6 +1,7 @@
 # Truncated Guassian Mixtures
-[![Documentation](https://img.shields.io/badge/docs-online-blue)](https://potatoasad.github.io/truncatedgaussianmixtures/index.html)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.13999618.svg)](https://doi.org/10.5281/zenodo.13999618)
 [![PyPI version](https://badge.fury.io/py/truncatedgaussianmixtures.svg)](https://badge.fury.io/py/truncatedgaussianmixtures)
+[![Documentation](https://img.shields.io/badge/docs-online-blue)](https://potatoasad.github.io/truncatedgaussianmixtures/index.html)
 
 Fit data to mixtures of *truncated* multivariate gaussians
 

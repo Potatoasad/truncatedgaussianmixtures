@@ -11,5 +11,6 @@ setup(
     author='Asad Hussain',
     author_email='asadh@utexas.edu',
     url='https://github.com/potatoasad/truncatedgaussianmixtures',
-    packages=['juliacall', 'numpy', 'pandas']
+    packages=find_packages(exclude=('tests', 'docs', 'dev')),
+    install_requires=['juliacall', 'numpy', 'scipy']
 )

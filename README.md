@@ -31,28 +31,28 @@ julia installation. This will only happen once at the first ever import.
 The main function to use is `fit_gmm`. The following is a simple example use case. 
 
 ```python
-   import pandas as pd
-   from truncatedgaussianmixtures import fit_gmm
+import pandas as pd
+from truncatedgaussianmixtures import fit_gmm
+import numpy as np
 
-   # Generate some data
-   df = pd.DataFrame(np.random.randn(80_000, 2), columns=["x", "y"])
-   
-   # Truncated it to the unit square
-   cond = (df['x'] < 1) & (df['x'] > 0)  
-   cond &= (df['y'] < 1) & (df['y'] > 0)
-   df = df[cond]
+# Generate some data
+df = pd.DataFrame(np.random.randn(80_000, 2), columns=["x", "y"])
 
-   # Fit it a truncated gaussian mixture model to it
-   gmm = fit_gmm(data = df,      # data to fit to
-                 N    = 1,       # Number of components of the mixture model
-                 a    = [0,0],   # lower corner of the truncation
-                 b    = [1,1],   # upper corner of the truncation
-                 cov  = "diag"   # covariance structure: any of ("diag", "full")
-          )
+# Truncated it to the unit square
+cond = (df['x'] < 1) & (df['x'] > 0)  
+cond &= (df['y'] < 1) & (df['y'] > 0)
+df = df[cond]
 
-   # Sample from the gmm
-   df_fit = gmm.sample(len(df));
+# Fit it a truncated gaussian mixture model to it
+gmm = fit_gmm(data = df,      # data to fit to
+             N    = 1,       # Number of components of the mixture model
+             a    = [0,0],   # lower corner of the truncation
+             b    = [1,1],   # upper corner of the truncation
+             cov  = "diag"   # covariance structure: any of ("diag", "full")
+      )
 
-   # Evaluate it at different points
-   gmm.pdf(np.array([0,0]))
+# Sample from the gmm
+df_fit = gmm.sample(len(df));
+
+gmm.pdf(np.array([0, 0]).reshape(1,2)) ## Dimension index needs to be the last index
 ```

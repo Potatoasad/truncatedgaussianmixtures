@@ -3,13 +3,14 @@ name = "truncatedgaussianmixtures"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.9"
 dependencies = [
-    "juliacall>=0.9.28",
-    "matplotlib>=3.10.6",
-    "numpy>=2.3.3",
-    "pandas>=2.3.3",
-    "scipy>=1.16.2",
+    "juliacall",
+    "matplotlib",
+    "numpy",
+    "pandas",
+    "scipy",
+    "h5py"
 ]
 
 [tool.uv.workspace]
@@ -22,6 +23,6 @@ truncatedgaussianmixtures = { workspace = true }
 
 [dependency-groups]
 dev = [
-    "pytest>=8.4.2",
+    "pytest",
     "truncatedgaussianmixtures",
 ]

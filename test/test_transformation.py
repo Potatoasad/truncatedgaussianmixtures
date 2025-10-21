@@ -32,7 +32,8 @@ def test_tgmm_run2():
 	T = Transformation(['x', 'y', 'z'],
 						"(x,y,z) -> (x^2,y,cos(z))", 
 						['x1','y', 'z1'], 
-						"(x1,y,z1) -> (x^(0.5),y,acos(z))")
+						"(x1,y,z1) -> (x1^(0.5),y,acos(z1))",
+						)
 
 
 	df = pd.DataFrame({'x' : np.random.rand(1_000), 

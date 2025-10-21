@@ -5,6 +5,8 @@ from .julia_helpers import jl_array
 import juliacall
 import numpy as np
 from typing import Any, List, Optional
+from .save_load import save_dict_h5, load_dict_h5
+from .transformations import Transformation
 
 @dataclass
 class TGMM:
@@ -17,12 +19,17 @@ class TGMM:
 	block_structure : Optional[Any] = None
 	cov : str = "full"
 	data : Optional[Any] = None
+	sample_weights : Any = None
 
 	def __post_init__(self):
 		self._means = np.stack([jl_array(a.normal.μ) for a in self.gmm.components])
 		self._covariances = np.stack([jl_array(a.normal.Σ) for a in self.gmm.components])
 		jl.seval("using LinearAlgebra")
 		jl.seval("using Distributions")
+		jl.seval("import Distributions")
+		jl.seval("get_znk(gmm,df) = [TruncatedGaussianMixtures.Zⁿ(gmm, collect(x)) for x in eachrow(df)]")
+		jl.seval("get_comps(znk) = [rand(Distributions.Categorical(z)) for z in znk]")
+		jl.seval("get_comps(gmm::Distributions.MixtureModel, df) = get_comps(get_znk(gmm,df))")
 		self._std_deviations = np.sqrt(np.stack([jl_array(jl.diag(a.normal.Σ)) for a in self.gmm.components]))
 		self._weights = np.array(self.gmm.prior.p)
 		self.d = self.means.shape[-1]
@@ -34,7 +41,24 @@ class TGMM:
 		elif self.cols is None:
 			self.cols = [f"x_{i}" for i in range(self.d)]
 			self.domain_cols = self.cols
-			self.image_cols = self.image_cols
+			self.image_cols = self.cols
+			if self.data is not None:
+				self.responsibilities = jl.get_znk(self.gmm, pandas_to_jl(self.data[self.cols]))
+			else:
+				print("Warning: No data output to the result object")
+
+
+		if self.data is not None:
+			if self.transformation is not None:
+				self.transformed_data = jl_to_pandas(jl.forward(self.transformation.julia_object, jl.DataFrame(self.data)))
+				self.responsibilities = jl.get_znk(self.gmm, pandas_to_jl(self.transformed_data[self.image_cols]))
+			else:
+				self.responsibilities = jl.get_znk(self.gmm, pandas_to_jl(self.data[self.cols]))
+		else:
+			print("Warning: No data output to the result object")
+
+
+			
 
 		if self.cov == "full":
 			if self.block_structure is None:
@@ -178,6 +202,93 @@ class TGMM:
 			df_out["components"] = df["components"]
 
 		return df_out
+
+	def save(self, filename):
+		fit2 = self;
+		if fit2.transformation is not None:
+			T = fit2.transformation
+			transformation_save = {
+				'input_columns' : T.input_columns,
+				'forward_transformation' : T.forward_transformation,
+				'transformed_columns' : T.transformed_columns,
+				'inverse_transformation' : T.inverse_transformation,
+				'ignore_columns' : T.ignore_columns,
+				'extra_funcs' : T.extra_funcs
+				}
+		else:
+			transformation_save = None
+
+		if 'components' in fit2.data.columns:
+		    thedata = fit2.data.drop('components', axis=1);
+		    component_assignment = fit2.data['components'].values
+		else:
+		    thedata = fit2.data
+
+		tgmm_save = {
+		    'cols' : fit2.cols,
+		    'domain_cols' : fit2.domain_cols,
+		    'image_cols' : fit2.image_cols,
+		    'responsibilities' : np.array([np.array(x) for x in fit2.responsibilities]),
+		    'block_structure' : fit2.block_structure,
+		    'cov' : fit2.cov,
+		    'data' : thedata,
+		    'gmm' : {
+		        'means' : fit2.means, 
+		        'covariances' : fit2.covariances, 
+		        'weights' : fit2.weights, 
+		        'a' : np.array(fit2.gmm.components[0].a), 
+		        'b' : np.array(fit2.gmm.components[0].b)
+		    }
+		    
+		}
+
+		tgmm_save['transformation'] = transformation_save
+		if 'components' in fit2.data.columns:
+			tgmm_save['components'] = fit2.data['components'].values
+
+		save_dict_h5(filename, tgmm_save)
+
+	@classmethod
+	def load(cls, filename):
+		result = load_dict_h5(filename)
+		if (result.get('transformation', None) is not None):
+		    T = Transformation(**result['transformation'])
+		else:
+		    T = None
+
+		jl.seval("""
+		using TruncatedGaussianMixtures, Distributions, DataFrames
+		function create_gmm(means, covariances, weights, a, b)
+		K = size(weights)[1];
+		d = size(means)[2];
+		gmm = MixtureModel([TruncatedMvNormal(MvNormal(means[k,:], covariances[k,:,:]), a, b) for k in 1:K], weights)
+		gmm
+		end
+		""")
+
+		gmm = jl.create_gmm(jl_array(result['gmm']['means']), 
+		                    jl_array(result['gmm']['covariances']), 
+		                    jl_array(result['gmm']['weights']), 
+		                    jl_array(result['gmm']['a']), 
+		                    jl_array(result['gmm']['b']));
+
+		jl.seval("array_to_vec(v) = [v[i,:] for i in 1:size(v,1)]")
+
+		if ('components' in result.keys()) and (result.get('data',None) is not None):
+			result['data']['components'] = result['components']
+
+		obj = cls(gmm = gmm,
+		    cols = result['cols'],
+		    domain_cols= result['domain_cols'],
+		    image_cols= result['image_cols'],
+		    transformation= T,
+		    responsibilities= jl.array_to_vec(jl_array(result['responsibilities'])),
+		    block_structure= result.get('block_structure',None),
+		    cov = result.get('cov',None),
+		    data = result.get('data',None),
+		    sample_weights = result.get('sample_weights',None))
+
+		return obj
 
 
 

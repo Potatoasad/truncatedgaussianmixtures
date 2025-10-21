@@ -10,8 +10,17 @@ class Transformation:
 	transformed_columns : List[str]
 	inverse_transformation : str
 	ignore_columns : Optional[List[str]] = None
+	extra_funcs : Optional[List[str]] = None ## list of strings of julia functions used in the transformation
 
 	def __post_init__(self):
+		if self.ignore_columns is None:
+			self.ignore_columns = [];
+		if self.extra_funcs is not None:
+			if type(self.extra_funcs) == type([]):
+				for s in self.extra_funcs:
+					jl.seval(s)
+			elif type(self.extra_funcs) == type("blah"):
+				jl.seval(s)
 		input_columns_jl = jl_convert(jl.Vector[jl.Symbol], self.input_columns)
 		forward_transformation_jl = jl.seval(self.forward_transformation)
 		transformed_columns_jl = jl_convert(jl.Vector[jl.Symbol], self.transformed_columns)

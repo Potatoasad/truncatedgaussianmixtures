@@ -115,15 +115,18 @@ class TGMM:
 
 		components = range(len(self.weights))
 
-		df = self.sample_with_fixed_columns(analytic_columns, sampled_columns)
+		if len(sampled_columns) != 0:
+			df = self.sample_with_fixed_columns(analytic_columns, sampled_columns)
 
-		dfs = []
+			dfs = []
 
-		for component in components:
-			df_component = df[(df["components"] == (component + 1))].sample(N, replace=True)
-			dfs.append(df_component)
+			for component in components:
+				df_component = df[(df["components"] == (component + 1))].sample(N, replace=True)
+				dfs.append(df_component)
 
-		data = {col : np.stack([dfs[i][col].values for i in components]) for col in cols}
+			data = {col : np.stack([dfs[i][col].values for i in components]) for col in cols}
+		else:
+			data = {}
 
 		for i,k in enumerate(analytic_indices):
 			data[analytic_columns[i] + "_mu_kernel"] = self.means[:,k]

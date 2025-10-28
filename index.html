@@ -1,0 +1,187 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Truncated Gaussian Mixtures &mdash; truncated gaussian mixtures 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            truncated gaussian mixtures
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul>
+<li><a class="reference internal" href="#">Truncated Gaussian Mixtures</a><ul>
+<li><a class="reference internal" href="#advantages">Advantages</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#quick-start">Quick Start</a></li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">truncated gaussian mixtures</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Truncated Gaussian Mixtures</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="truncated-gaussian-mixtures">
+<h1>Truncated Gaussian Mixtures<a class="headerlink" href="#truncated-gaussian-mixtures" title="Link to this heading"></a></h1>
+<p>Fit data to mixtures of <em>truncated</em> multivariate gaussians</p>
+<div class="math notranslate nohighlight">
+\[p(x) = \sum_k w_k\  \phi_{[{\bf a}, {\bf b}]}({\bf x} | \boldsymbol{\mu}_k, \boldsymbol{\Sigma}_k)\]</div>
+<p>where <span class="math notranslate nohighlight">\({\bf a}\)</span> and <span class="math notranslate nohighlight">\({\bf b}\)</span> are the bounding corners of the hypercube we would like to truncate the gaussian in.
+This package supports</p>
+<ol class="arabic simple">
+<li><p>Full, Diagonal and Block diagonal covariances for each component</p></li>
+<li><p>Inteface to allow one to perform the fit in some latent space given by a user-defined transformation, and carry along any target labels</p></li>
+<li><p>Sampling and pdf evaluation from the resultant fit</p></li>
+</ol>
+<section class="tex2jax_ignore mathjax_ignore" id="advantages">
+<h2>Advantages<a class="headerlink" href="#advantages" title="Link to this heading"></a></h2>
+<p>A standard Gaussian Mixture Model will tend to avoid the edges. A truncated kernel reproduces the probability distributions at the edges as well, as can be seen below.</p>
+<p><img alt="alt text" src="_images/Comparison2.gif" /></p>
+<p><img alt="alt text" src="_images/Comparison3.gif" /></p>
+</section>
+<p>We implement the Expectation Maximization algorithm as outlined in <span id="id1">[<a class="reference internal" href="#id4" title="Gyemin Lee and Clayton Scott. Em algorithms for multivariate gaussian mixture models with truncated and censored data. Computational Statistics and Data Analysis, 56(9):2816–2829, sep 2012. URL: http://dx.doi.org/10.1016/j.csda.2012.03.003, doi:10.1016/j.csda.2012.03.003.">LS12</a>]</span> and use the better convergence properties of the Expectation-Conjugate Gradient method (outlined in <span id="id2">[<a class="reference internal" href="#id5" title="Ruslan Salakhutdinov, Sam Roweis, and Zoubin Ghahramani. Optimization with em and expectation-conjugate-gradient. In Proceedings of the Twentieth International Conference on International Conference on Machine Learning, ICML'03, 672–679. AAAI Press, 2003.">SRG03</a>]</span>) in the case that the covariances of the gaussians are diagonal.</p>
+<div class="docutils container" id="id3">
+<div role="list" class="citation-list">
+<div class="citation" id="id4" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">LS12</a><span class="fn-bracket">]</span></span>
+<p>Gyemin Lee and Clayton Scott. Em algorithms for multivariate gaussian mixture models with truncated and censored data. <em>Computational Statistics and Data Analysis</em>, 56(9):2816–2829, sep 2012. URL: <a class="reference external" href="http://dx.doi.org/10.1016/j.csda.2012.03.003">http://dx.doi.org/10.1016/j.csda.2012.03.003</a>, <a class="reference external" href="https://doi.org/10.1016/j.csda.2012.03.003">doi:10.1016/j.csda.2012.03.003</a>.</p>
+</div>
+<div class="citation" id="id5" role="doc-biblioentry">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">SRG03</a><span class="fn-bracket">]</span></span>
+<p>Ruslan Salakhutdinov, Sam Roweis, and Zoubin Ghahramani. Optimization with em and expectation-conjugate-gradient. In <em>Proceedings of the Twentieth International Conference on International Conference on Machine Learning</em>, ICML'03, 672–679. AAAI Press, 2003.</p>
+</div>
+</div>
+</div>
+</section>
+<section id="quick-start">
+<h1>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h1>
+<p>You can install this library using</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>truncatedgaussianmixtures
+</pre></div>
+</div>
+<p>You can then import truncatedgaussianmixtures. At the first import it may take a while, since this will create a local
+julia installation. This will only happen once at the first ever import.</p>
+<p>The main function to use is <code class="code docutils literal notranslate"><span class="pre">fit_gmm</span></code>. The following is a simple example use case.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">truncatedgaussianmixtures</span><span class="w"> </span><span class="kn">import</span> <span class="n">fit_gmm</span>
+
+<span class="c1"># Generate some data</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">80_000</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;x&quot;</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">])</span>
+
+<span class="c1"># Truncated it to the unit square</span>
+<span class="n">cond</span> <span class="o">=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">cond</span> <span class="o">&amp;=</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">cond</span><span class="p">]</span>
+
+<span class="c1"># Fit it a truncated gaussian mixture model to it</span>
+<span class="n">gmm</span> <span class="o">=</span> <span class="n">fit_gmm</span><span class="p">(</span><span class="n">data</span> <span class="o">=</span> <span class="n">df</span><span class="p">,</span>      <span class="c1"># data to fit to</span>
+              <span class="n">N</span>    <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>       <span class="c1"># Number of components of the mixture model</span>
+              <span class="n">a</span>    <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span>   <span class="c1"># lower corner of the truncation</span>
+              <span class="n">b</span>    <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span>   <span class="c1"># upper corner of the truncation</span>
+              <span class="n">cov</span>  <span class="o">=</span> <span class="s2">&quot;diag&quot;</span>   <span class="c1"># covariance structure: any of (&quot;diag&quot;, &quot;full&quot;)</span>
+       <span class="p">)</span>
+
+<span class="c1"># Sample from the gmm</span>
+<span class="n">df_fit</span> <span class="o">=</span> <span class="n">gmm</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">));</span>
+
+<span class="c1"># Evaluate it at different points</span>
+<span class="n">gmm</span><span class="o">.</span><span class="n">pdf</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span>
+</pre></div>
+</div>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Asad Hussain.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

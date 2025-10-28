@@ -1,0 +1,1607 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>&lt;no title&gt; &mdash; truncated gaussian mixtures 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/nbsphinx-code-cells.css?v=2aa19091" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+      <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+      <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            truncated gaussian mixtures
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"><ul class="simple">
+</ul>
+</div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">truncated gaussian mixtures</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">&lt;no title&gt;</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/FullTruncatedGaussianTests.ipynb.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[101]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">jax</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">jax.numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">jnp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpyro</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">gravpop</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">truncnormkde</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">matplotlib.patches</span><span class="w"> </span><span class="kn">import</span> <span class="n">Ellipse</span>
+
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpyro.distributions</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dist</span>
+<span class="n">prior</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;mu_y&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;rho&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">JefferysPrior</span><span class="p">:</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hyper_var_names</span><span class="p">,</span> <span class="n">eta</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hyper_var_names</span> <span class="o">=</span> <span class="n">hyper_var_names</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eta</span> <span class="o">=</span> <span class="n">eta</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">logpdf</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">rho</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hyper_var_names</span><span class="p">[</span><span class="mi">4</span><span class="p">],</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">det</span> <span class="o">=</span> <span class="mi">1</span><span class="o">-</span><span class="n">rho</span><span class="o">**</span><span class="mi">2</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">eta</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">det</span><span class="p">)</span>
+
+<span class="n">latex_symbols</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;$\mu_x$&quot;</span><span class="p">,</span>
+    <span class="s1">&#39;sigma_x&#39;</span> <span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;$\sigma_x$&quot;</span><span class="p">,</span>
+    <span class="s1">&#39;mu_y&#39;</span> <span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;$\mu_y$&quot;</span><span class="p">,</span>
+    <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;$\sigma_y$&quot;</span><span class="p">,</span>
+    <span class="s1">&#39;rho&#39;</span> <span class="p">:</span> <span class="sa">r</span><span class="s2">&quot;$\rho$&quot;</span>
+<span class="p">}</span>
+
+<span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">TruncatedGaussianTests</span><span class="p">:</span>
+    <span class="n">parameters</span> <span class="p">:</span> <span class="n">Dict</span>
+    <span class="n">sigma_likelihood</span> <span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="n">N_events</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">500</span>
+    <span class="n">oversample_ratio</span> <span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span>
+    <span class="n">a</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">b</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="k">lambda</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">]))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpack_sigmas</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;sigma_x&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;sigma_y&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;rho&#39;</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">unpack_mus</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;mu_x&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s1">&#39;mu_y&#39;</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">generate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">N</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">=</span> <span class="n">N</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">;</span> <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">;</span>
+        <span class="n">mu_1</span><span class="p">,</span> <span class="n">mu_2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unpack_mus</span><span class="p">()</span>
+        <span class="n">sigma_1</span><span class="p">,</span> <span class="n">sigma_2</span><span class="p">,</span> <span class="n">rho</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unpack_sigmas</span><span class="p">()</span>
+        <span class="n">Sigma</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="n">sigma_1</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">rho</span><span class="o">*</span><span class="n">sigma_1</span><span class="o">*</span><span class="n">sigma_2</span><span class="p">],[</span><span class="n">rho</span><span class="o">*</span><span class="n">sigma_1</span><span class="o">*</span><span class="n">sigma_2</span><span class="p">,</span> <span class="n">sigma_2</span><span class="o">**</span><span class="mi">2</span><span class="p">]])</span>
+        <span class="n">L</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">cholesky</span><span class="p">(</span><span class="n">Sigma</span><span class="p">)</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">N_events</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">oversample_ratio</span><span class="p">)</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="p">(</span><span class="n">L</span> <span class="o">@</span> <span class="n">Z</span><span class="p">)</span> <span class="o">+</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">mu_1</span><span class="p">,</span> <span class="n">mu_2</span><span class="p">])[:,</span><span class="kc">None</span><span class="p">]</span>
+
+        <span class="n">x_in_range</span> <span class="o">=</span> <span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span> <span class="o">&gt;</span> <span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,:]</span> <span class="o">&lt;</span> <span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">y_in_range</span> <span class="o">=</span> <span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">&gt;</span> <span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">,:]</span> <span class="o">&lt;</span> <span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="n">x_in_range</span> <span class="o">&amp;</span> <span class="n">y_in_range</span><span class="p">]</span>
+
+        <span class="n">X</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">N_events</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">X</span> <span class="o">=</span> <span class="n">X</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">plot_intrinsic_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.01</span><span class="p">):</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+        <span class="n">fig</span><span class="p">,</span><span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">cov_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_likelihood</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_likelihood</span><span class="o">**</span><span class="mi">2</span><span class="p">])</span>
+            <span class="n">eig_values</span><span class="p">,</span> <span class="n">eig_vectors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="n">cov_matrix</span><span class="p">)</span>
+            <span class="n">angle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">degrees</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">arctan2</span><span class="p">(</span><span class="n">eig_vectors</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">eig_vectors</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]))</span>
+            <span class="n">width</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">eig_values</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="mf">1.645</span>  <span class="c1"># 90% CI</span>
+            <span class="n">height</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">eig_values</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="mf">1.645</span>  <span class="c1"># 90% CI</span>
+
+            <span class="n">ellipse</span> <span class="o">=</span> <span class="n">Ellipse</span><span class="p">(</span><span class="n">xy</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">]),</span>
+                              <span class="n">width</span><span class="o">=</span><span class="n">width</span><span class="p">,</span>
+                              <span class="n">height</span><span class="o">=</span><span class="n">height</span><span class="p">,</span>
+                              <span class="n">angle</span><span class="o">=</span><span class="n">angle</span><span class="p">,</span>
+                              <span class="n">edgecolor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                              <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+                              <span class="n">facecolor</span><span class="o">=</span><span class="s1">&#39;b&#39;</span><span class="p">,</span>
+                              <span class="c1">#alpha=1/(self.N_events*((7*self.sigma_likelihood)**2)))</span>
+                              <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">add_patch</span><span class="p">(</span><span class="n">ellipse</span><span class="p">)</span>
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,:],</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">,:],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;k&quot;</span><span class="p">)</span>
+
+
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlim</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylim</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+        <span class="c1">#plt.legend()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">N_events</span><span class="si">}</span><span class="s2"> events&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">create_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">event_data</span> <span class="o">=</span>  <span class="p">{</span><span class="s1">&#39;x_mu_kernel&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,:][</span><span class="kc">None</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="mi">0</span><span class="p">,:][</span><span class="kc">None</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_likelihood</span><span class="p">,</span>
+                       <span class="s1">&#39;y_mu_kernel&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">,:][</span><span class="kc">None</span><span class="p">]</span><span class="o">.</span><span class="n">T</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">X</span><span class="p">[</span><span class="mi">1</span><span class="p">,:][</span><span class="kc">None</span><span class="p">]</span><span class="o">.</span><span class="n">T</span><span class="p">)</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">sigma_likelihood</span><span class="p">,</span>
+                       <span class="s1">&#39;x_sigma_kernel&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_likelihood</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">N_events</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+                       <span class="s1">&#39;y_sigma_kernel&#39;</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_likelihood</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">N_events</span><span class="p">,</span> <span class="mi">1</span><span class="p">)),</span>
+                       <span class="s1">&#39;weights&#39;</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">N_events</span><span class="p">,</span> <span class="mi">1</span><span class="p">))}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">event_data</span> <span class="o">=</span> <span class="n">event_data</span>
+
+        <span class="k">return</span> <span class="n">event_data</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">infer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="n">prior</span><span class="p">,</span> <span class="n">latex_symbols</span><span class="o">=</span><span class="p">{}):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">HL</span> <span class="o">=</span> <span class="n">HybridPopulationLikelihood</span><span class="p">(</span><span class="n">sampled_models</span><span class="o">=</span><span class="p">[],</span> <span class="n">analytic_models</span><span class="o">=</span><span class="p">[</span><span class="n">model</span><span class="p">],</span>
+                                        <span class="n">event_data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">event_data</span><span class="p">,</span> <span class="n">selection_data</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">the_sampler</span> <span class="o">=</span> <span class="n">Sampler</span><span class="p">(</span><span class="n">priors</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span><span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="n">prior</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">()},</span>
+                      <span class="n">constraints</span><span class="o">=</span><span class="p">[</span><span class="n">JefferysPrior</span><span class="p">([</span><span class="s1">&#39;mu_x&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">])],</span>
+                      <span class="n">latex_symbols</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">latex_symbols</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">k</span><span class="p">)</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">()},</span>
+                      <span class="n">likelihood</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">HL</span><span class="p">,</span>
+                      <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">)</span>
+
+        <span class="n">the_sampler</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sampler</span> <span class="o">=</span> <span class="n">the_sampler</span>
+
+        <span class="n">the_sampler</span><span class="o">.</span><span class="n">corner</span><span class="p">(</span><span class="n">truth</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">the_sampler</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">columns</span><span class="p">]));</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">compare_posterior_predictive</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+        <span class="n">data_grid</span> <span class="o">=</span> <span class="n">Grid</span><span class="p">([</span><span class="n">Grid1D</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">Grid1D</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">)])</span><span class="o">.</span><span class="n">data</span>
+
+        <span class="n">Z_init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">HL</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data_grid</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+        <span class="n">chuncked_func</span> <span class="o">=</span> <span class="n">chunked_vmap</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">HL</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data_grid</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span>
+                                     <span class="n">in_axes</span><span class="o">=</span><span class="p">({</span><span class="n">k</span><span class="p">:</span><span class="mi">0</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">()},),</span>
+                                     <span class="n">chunk</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">chuncked_func</span><span class="p">({</span><span class="n">col</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">sampler</span><span class="o">.</span><span class="n">samples</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampler</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">columns</span><span class="p">})</span>
+
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">data_grid</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">data_grid</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">jnp</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Median Posterior Predictive&quot;</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">data_grid</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">data_grid</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">Z_init</span><span class="p">,</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Injected Distribution&quot;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">quantile_posterior_predictive</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantiles</span><span class="o">=</span><span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">]):</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+        <span class="n">data_grid</span> <span class="o">=</span> <span class="n">Grid</span><span class="p">([</span><span class="n">Grid1D</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span> <span class="n">Grid1D</span><span class="p">(</span><span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">)])</span><span class="o">.</span><span class="n">data</span>
+
+        <span class="n">Z_init</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">HL</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data_grid</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span>
+        <span class="n">chuncked_func</span> <span class="o">=</span> <span class="n">chunked_vmap</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">HL</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">data_grid</span><span class="p">,</span> <span class="n">x</span><span class="p">),</span>
+                                     <span class="n">in_axes</span><span class="o">=</span><span class="p">({</span><span class="n">k</span><span class="p">:</span><span class="mi">0</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">()},),</span>
+                                     <span class="n">chunk</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+        <span class="n">Z</span> <span class="o">=</span> <span class="n">chuncked_func</span><span class="p">({</span><span class="n">col</span><span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">sampler</span><span class="o">.</span><span class="n">samples</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">sampler</span><span class="o">.</span><span class="n">samples</span><span class="o">.</span><span class="n">columns</span><span class="p">})</span>
+
+        <span class="n">mu_1</span><span class="p">,</span> <span class="n">mu_2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">unpack_mus</span><span class="p">()</span>
+
+        <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="n">ncols</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">quantiles</span><span class="p">),</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)):</span>
+            <span class="n">contour_plot</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">data_grid</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">],</span> <span class="n">data_grid</span><span class="p">[</span><span class="s1">&#39;y&#39;</span><span class="p">],</span> <span class="n">jnp</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">quantiles</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">))</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">quantiles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span><span class="si">}</span><span class="s2"> Posterior Predictive&quot;</span><span class="p">)</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">contour_plot</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">axes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">scatter</span><span class="p">([</span><span class="n">mu_1</span><span class="p">],[</span><span class="n">mu_2</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">marker</span><span class="o">=</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">ppd</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1">#posts = {col:self.sampler.samples[col].values for col in self.sampler.samples.columns};</span>
+        <span class="n">df_samps</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">HL</span><span class="o">.</span><span class="n">models</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">sampler</span><span class="o">.</span><span class="n">samples</span><span class="p">,</span> <span class="n">oversample</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">BoundedKDEPlot</span><span class="p">(</span><span class="n">df_samps</span><span class="p">)</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">b</span><span class="p">)</span>
+<br/></pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[82]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TGT</span> <span class="o">=</span> <span class="n">TruncatedGaussianTests</span><span class="p">(</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span><span class="mf">0.2</span><span class="p">},</span>
+                       <span class="n">sigma_likelihood</span><span class="o">=</span><span class="mf">0.03</span><span class="p">,</span> <span class="n">N_events</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">TGT</span><span class="o">.</span><span class="n">create_data</span><span class="p">();</span>
+
+
+<span class="n">var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
+<span class="n">hyper_var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;mu_x&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">]</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+
+<span class="n">TG1D</span> <span class="o">=</span> <span class="n">TruncatedGaussian1DIndependentAnalytic</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">var_names</span><span class="o">=</span><span class="n">var_names</span><span class="p">,</span> <span class="n">hyper_var_names</span><span class="o">=</span><span class="n">hyper_var_names</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">plot_intrinsic_parameters</span><span class="p">();</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">infer</span><span class="p">(</span><span class="n">TG1D</span><span class="p">)</span>
+
+<span class="c1">#TGT.compare_posterior_predictive()</span>
+
+<span class="c1">#TGT.quantile_posterior_predictive()</span>
+<span class="n">TGT</span><span class="o">.</span><span class="n">ppd</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_1_0.png" src="_images/FullTruncatedGaussianTests_1_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+No selection function provided
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+sample: 100%|███████████████████████████████████████████| 2000/2000 [00:11&lt;00:00, 168.66it/s, 7 steps of size 2.79e-01. acc. prob=0.85]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+                mean       std    median      5.0%     95.0%     n_eff     r_hat
+      mu_x      0.20      0.02      0.20      0.17      0.22    325.55      1.00
+      mu_y      0.03      0.02      0.03      0.00      0.06    210.82      1.00
+   sigma_x      0.20      0.01      0.20      0.18      0.22    311.83      1.01
+   sigma_y      0.19      0.01      0.19      0.17      0.20    202.40      1.00
+
+Number of divergences: 0
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_1_4.png" src="_images/FullTruncatedGaussianTests_1_4.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_1_5.png" src="_images/FullTruncatedGaussianTests_1_5.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[105]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TGT</span> <span class="o">=</span> <span class="n">TruncatedGaussianTests</span><span class="p">(</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span><span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
+                       <span class="n">sigma_likelihood</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">N_events</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">TGT</span><span class="o">.</span><span class="n">create_data</span><span class="p">();</span>
+
+
+<span class="n">var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
+<span class="n">hyper_var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;mu_x&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">]</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+
+<span class="n">TG2D</span> <span class="o">=</span> <span class="n">TruncatedGaussian2DAnalytic</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">var_names</span><span class="o">=</span><span class="n">var_names</span><span class="p">,</span> <span class="n">hyper_var_names</span><span class="o">=</span><span class="n">hyper_var_names</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">plot_intrinsic_parameters</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.00199</span><span class="p">);</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">infer</span><span class="p">(</span><span class="n">TG2D</span><span class="p">)</span>
+
+<span class="c1">#TGT.compare_posterior_predictive()</span>
+
+<span class="c1">#TGT.quantile_posterior_predictive()</span>
+<span class="n">TGT</span><span class="o">.</span><span class="n">ppd</span><span class="p">();</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_2_0.png" src="_images/FullTruncatedGaussianTests_2_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+No selection function provided
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+sample: 100%|███████████████████████████████████████████| 2000/2000 [02:42&lt;00:00, 12.30it/s, 35 steps of size 8.10e-02. acc. prob=0.93]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+                mean       std    median      5.0%     95.0%     n_eff     r_hat
+      mu_x      0.17      0.08      0.20      0.02      0.27    227.40      1.00
+      mu_y      0.11      0.06      0.11      0.01      0.19    337.78      1.00
+       rho     -0.37      0.55     -0.50     -1.00      0.42    306.61      1.00
+   sigma_x      0.25      0.20      0.22      0.00      0.52    137.89      1.00
+   sigma_y      0.21      0.14      0.18      0.01      0.39    136.77      1.00
+
+Number of divergences: 1
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_2_4.png" src="_images/FullTruncatedGaussianTests_2_4.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_2_5.png" src="_images/FullTruncatedGaussianTests_2_5.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[96]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">juliacall</span><span class="o">.</span><span class="n">Main</span><span class="o">.</span><span class="n">get_correlation</span><span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[96]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+-0.1824301590639567
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[103]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">juliacall</span>
+
+
+<span class="n">testfunc</span> <span class="o">=</span> <span class="n">juliacall</span><span class="o">.</span><span class="n">Main</span><span class="o">.</span><span class="n">seval</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">using Distributions</span>
+<span class="s2">using TruncatedGaussianMixtures</span>
+<span class="s2">using DataFrames</span>
+<span class="s2">using ProgressMeter</span>
+
+<span class="s2">make_trunc_norm(μ1, σ1, μ2, σ2, ρ; a=[0.0, 0.0], b=[1.0, 1.0]) = TruncatedMvNormal(MvNormal([μ1, μ2], [σ1^2 σ1*σ2*ρ; σ1*σ2*ρ σ2^2]), a, b);</span>
+<span class="s2">function get_correlation(μ1, σ1, μ2, σ2, ρ; a=[0.0, 0.0], b=[1.0, 1.0])</span>
+<span class="s2">    M1, M2 = TruncatedGaussianMixtures.moments(make_trunc_norm(μ1, σ1, μ2, σ2, ρ; a=a, b=b));</span>
+<span class="s2">    Σ = M2 - M1 * M1&#39;;</span>
+<span class="s2">    Σ[1,2]/sqrt(Σ[1,1]*Σ[2,2])</span>
+<span class="s2">end</span>
+
+<span class="s2">function get_true_correlations(df; cols=[:mu_chi_1_at_0, :sigma_chi_1_at_0, :mu_chi_2_at_0, :sigma_chi_2_at_0, :rho_chi_1], a=[0.0, 0.0], b=[1.0, 1.0])</span>
+<span class="s2">    df_prior = DataFrame();</span>
+<span class="s2">    N = nrow(df);</span>
+<span class="s2">    for col in cols</span>
+<span class="s2">        if occursin(&quot;rho&quot;, string(col))</span>
+<span class="s2">            df_prior[!, col] = 2 .* rand(N) .- 1</span>
+<span class="s2">        else</span>
+<span class="s2">            df_prior[!, col] = rand(N);</span>
+<span class="s2">        end</span>
+<span class="s2">    end</span>
+
+<span class="s2">    corrs = zeros(N)</span>
+<span class="s2">    corrs_prior = zeros(N)</span>
+<span class="s2">    @showprogress for (i,x) in enumerate(eachrow(df))</span>
+<span class="s2">        corrs[i] = get_correlation([df[i, col] for col in cols]...; a=a, b=b)</span>
+<span class="s2">        corrs_prior[i] = get_correlation([df[i, col] for col in cols]...; a=a,b=b)</span>
+<span class="s2">    end</span>
+<span class="s2">    df[!, :correlation_true] = corrs;</span>
+<span class="s2">    df_prior[! ,:correlation_true] = corrs_prior;</span>
+
+<span class="s2">    df, df_prior</span>
+<span class="s2">end</span>
+
+<span class="s2">x -&gt; get_true_correlations(DataFrame(x); cols=[:mu_x, :sigma_x, :mu_y, :sigma_y, :rho], a=[0.0, 0.0], b=[1.0, 1.0])</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)</span>
+
+<span class="n">df</span><span class="p">,</span> <span class="n">df_prior</span> <span class="o">=</span> <span class="n">testfunc</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="n">col</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">TGT</span><span class="o">.</span><span class="n">sampler</span><span class="o">.</span><span class="n">samples</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float&#39;</span><span class="p">)</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">TGT</span><span class="o">.</span><span class="n">sampler</span><span class="o">.</span><span class="n">samples</span><span class="p">}));</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">seaborn</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sns</span>
+<span class="n">sns</span><span class="o">.</span><span class="n">pairplot</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="n">col</span> <span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">col</span><span class="p">))</span> <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">juliacall</span><span class="o">.</span><span class="n">Main</span><span class="o">.</span><span class="n">names</span><span class="p">(</span><span class="n">df</span><span class="p">)}))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+Progress: 100%|███████████████████████��█████████████████| Time: 0:00:00
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_4_1.png" src="_images/FullTruncatedGaussianTests_4_1.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[168]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TGT</span> <span class="o">=</span> <span class="n">TruncatedGaussianTests</span><span class="p">(</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
+                       <span class="n">sigma_likelihood</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">TGT</span><span class="o">.</span><span class="n">create_data</span><span class="p">();</span>
+
+
+<span class="n">var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
+<span class="n">hyper_var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;mu_x&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">]</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+
+<span class="n">TG2D</span> <span class="o">=</span> <span class="n">TruncatedGaussian2DAnalytic</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">var_names</span><span class="o">=</span><span class="n">var_names</span><span class="p">,</span> <span class="n">hyper_var_names</span><span class="o">=</span><span class="n">hyper_var_names</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">plot_intrinsic_parameters</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.00199</span><span class="p">);</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">infer</span><span class="p">(</span><span class="n">TG2D</span><span class="p">)</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">compare_posterior_predictive</span><span class="p">()</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">quantile_posterior_predictive</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_6_0.png" src="_images/FullTruncatedGaussianTests_6_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+No selection function provided
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+sample: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [01:00&lt;00:00, 33.09it/s, 23 steps of size 1.23e-01. acc. prob=0.87]
+WARNING:root:Too few points to create valid contours
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+                mean       std    median      5.0%     95.0%     n_eff     r_hat
+      mu_x      0.12      0.08      0.11      0.00      0.22    345.79      1.00
+      mu_y      0.12      0.06      0.13      0.01      0.21    287.35      1.00
+       rho     -0.21      0.63     -0.25     -1.00      0.73    221.45      1.00
+   sigma_x      0.39      0.48      0.24      0.00      0.78    163.81      1.00
+   sigma_y      0.29      0.41      0.16      0.00      0.66    165.77      1.00
+
+Number of divergences: 1
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4a3aaf355f8c4b52bae372be88969e0e", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/var/folders/4g/bjm_kb714yl_6tgcqd4jbmqh0000gn/T/ipykernel_83683/2226853849.py:137: UserWarning: The following kwargs were not used by contour: &#39;axis&#39;
+  axes[1].contourf(data_grid[&#39;x&#39;], data_grid[&#39;y&#39;], Z_init,axis=0)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_6_6.png" src="_images/FullTruncatedGaussianTests_6_6.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_6_7.png" src="_images/FullTruncatedGaussianTests_6_7.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3a2610bc03d54ca19913b4903bae27e8", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_6_9.png" src="_images/FullTruncatedGaussianTests_6_9.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[158]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TGT</span> <span class="o">=</span> <span class="n">TruncatedGaussianTests</span><span class="p">(</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span><span class="mf">0.05</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">},</span>
+                       <span class="n">sigma_likelihood</span><span class="o">=</span><span class="mf">0.001</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">TGT</span><span class="o">.</span><span class="n">create_data</span><span class="p">();</span>
+
+
+<span class="n">var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
+<span class="n">hyper_var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;mu_x&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">]</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+
+<span class="n">TG2D</span> <span class="o">=</span> <span class="n">TruncatedGaussian2DAnalytic</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">var_names</span><span class="o">=</span><span class="n">var_names</span><span class="p">,</span> <span class="n">hyper_var_names</span><span class="o">=</span><span class="n">hyper_var_names</span><span class="p">)</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">plot_intrinsic_parameters</span><span class="p">();</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">infer</span><span class="p">(</span><span class="n">TG2D</span><span class="p">)</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">compare_posterior_predictive</span><span class="p">()</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">quantile_posterior_predictive</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+No artists with labels found to put in legend.  Note that artists whose label start with an underscore are ignored when legend() is called with no argument.
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_7_1.png" src="_images/FullTruncatedGaussianTests_7_1.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+No selection function provided
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+sample: 100%|███████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [00:26&lt;00:00, 75.52it/s, 7 steps of size 4.58e-01. acc. prob=0.89]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+                mean       std    median      5.0%     95.0%     n_eff     r_hat
+      mu_x      0.50      0.00      0.50      0.50      0.50    642.66      1.00
+      mu_y      0.50      0.00      0.50      0.49      0.50    692.94      1.00
+       rho      0.78      0.02      0.78      0.75      0.81    575.92      1.00
+   sigma_x      0.05      0.00      0.05      0.05      0.05    549.19      1.00
+   sigma_y      0.05      0.00      0.05      0.05      0.05    519.77      1.00
+
+Number of divergences: 0
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "aad07de9199e4b958624eacd55287ac5", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/var/folders/4g/bjm_kb714yl_6tgcqd4jbmqh0000gn/T/ipykernel_83683/1673770611.py:137: UserWarning: The following kwargs were not used by contour: &#39;axis&#39;
+  axes[1].contourf(data_grid[&#39;x&#39;], data_grid[&#39;y&#39;], Z_init,axis=0)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_7_7.png" src="_images/FullTruncatedGaussianTests_7_7.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_7_8.png" src="_images/FullTruncatedGaussianTests_7_8.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "91371c23fdc94701956141a24b4552ad", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_7_10.png" src="_images/FullTruncatedGaussianTests_7_10.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[169]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TGT</span> <span class="o">=</span> <span class="n">TruncatedGaussianTests</span><span class="p">(</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span><span class="mf">0.5</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">},</span>
+                       <span class="n">sigma_likelihood</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="mi">500</span><span class="p">)</span>
+<span class="n">TGT</span><span class="o">.</span><span class="n">create_data</span><span class="p">();</span>
+
+
+<span class="n">var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
+<span class="n">hyper_var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;mu_x&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">]</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+
+<span class="n">TG2D</span> <span class="o">=</span> <span class="n">TruncatedGaussian2DAnalytic</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">var_names</span><span class="o">=</span><span class="n">var_names</span><span class="p">,</span> <span class="n">hyper_var_names</span><span class="o">=</span><span class="n">hyper_var_names</span><span class="p">)</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">plot_intrinsic_parameters</span><span class="p">()</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">infer</span><span class="p">(</span><span class="n">TG2D</span><span class="p">)</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">compare_posterior_predictive</span><span class="p">()</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">quantile_posterior_predictive</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_8_0.png" src="_images/FullTruncatedGaussianTests_8_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+No selection function provided
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+sample: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [00:51&lt;00:00, 38.69it/s, 63 steps of size 1.11e-01. acc. prob=0.91]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+                mean       std    median      5.0%     95.0%     n_eff     r_hat
+      mu_x      0.50      0.00      0.50      0.50      0.51    267.35      1.00
+      mu_y      0.53      0.11      0.52      0.39      0.63    193.24      1.00
+       rho      0.04      0.36      0.03     -0.62      0.59    492.75      1.00
+   sigma_x      0.03      0.01      0.03      0.00      0.05    222.08      1.00
+   sigma_y      0.64      0.50      0.46      0.30      1.23    107.22      1.01
+
+Number of divergences: 0
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d4a46dc00401481d9edacce67b9cc688", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/var/folders/4g/bjm_kb714yl_6tgcqd4jbmqh0000gn/T/ipykernel_83683/2226853849.py:137: UserWarning: The following kwargs were not used by contour: &#39;axis&#39;
+  axes[1].contourf(data_grid[&#39;x&#39;], data_grid[&#39;y&#39;], Z_init,axis=0)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_8_6.png" src="_images/FullTruncatedGaussianTests_8_6.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_8_7.png" src="_images/FullTruncatedGaussianTests_8_7.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "29eeb4043811494384e6146bd227b225", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_8_9.png" src="_images/FullTruncatedGaussianTests_8_9.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[170]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TGT</span> <span class="o">=</span> <span class="n">TruncatedGaussianTests</span><span class="p">(</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">},</span>
+                       <span class="n">sigma_likelihood</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+
+<span class="n">prior_small_sigma</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.3</span><span class="p">),</span>
+    <span class="s1">&#39;mu_y&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.3</span><span class="p">),</span>
+    <span class="s1">&#39;rho&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">TGT</span><span class="o">.</span><span class="n">create_data</span><span class="p">();</span>
+
+
+<span class="n">var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
+<span class="n">hyper_var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;mu_x&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">]</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+
+<span class="n">TG2D</span> <span class="o">=</span> <span class="n">TruncatedGaussian2DAnalytic</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">var_names</span><span class="o">=</span><span class="n">var_names</span><span class="p">,</span> <span class="n">hyper_var_names</span><span class="o">=</span><span class="n">hyper_var_names</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">plot_intrinsic_parameters</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.00199</span><span class="p">);</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">infer</span><span class="p">(</span><span class="n">TG2D</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="n">prior_small_sigma</span><span class="p">)</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">compare_posterior_predictive</span><span class="p">()</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">quantile_posterior_predictive</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_9_0.png" src="_images/FullTruncatedGaussianTests_9_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+No selection function provided
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+sample: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [00:49&lt;00:00, 40.04it/s, 31 steps of size 1.65e-01. acc. prob=0.87]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+                mean       std    median      5.0%     95.0%     n_eff     r_hat
+      mu_x      0.12      0.07      0.12      0.01      0.22    436.63      1.00
+      mu_y      0.13      0.07      0.14      0.01      0.22    394.85      1.00
+       rho     -0.16      0.51     -0.20     -0.99      0.59    386.29      1.00
+   sigma_x      0.19      0.07      0.20      0.08      0.30    416.64      1.01
+   sigma_y      0.15      0.08      0.16      0.01      0.25    252.36      1.00
+
+Number of divergences: 0
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b1c22dc406a94b0abb5e7dbff8a9cd7e", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/var/folders/4g/bjm_kb714yl_6tgcqd4jbmqh0000gn/T/ipykernel_83683/2226853849.py:137: UserWarning: The following kwargs were not used by contour: &#39;axis&#39;
+  axes[1].contourf(data_grid[&#39;x&#39;], data_grid[&#39;y&#39;], Z_init,axis=0)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_9_6.png" src="_images/FullTruncatedGaussianTests_9_6.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_9_7.png" src="_images/FullTruncatedGaussianTests_9_7.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4c8a340eb2a649da8af938e0ff1de8c5", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_9_9.png" src="_images/FullTruncatedGaussianTests_9_9.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[171]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TGT</span> <span class="o">=</span> <span class="n">TruncatedGaussianTests</span><span class="p">(</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">},</span>
+                       <span class="n">sigma_likelihood</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+
+
+<span class="n">prior_small_sigma</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.8</span><span class="p">),</span>
+    <span class="s1">&#39;mu_y&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.8</span><span class="p">),</span>
+    <span class="s1">&#39;rho&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">TGT</span><span class="o">.</span><span class="n">create_data</span><span class="p">();</span>
+
+
+<span class="n">var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
+<span class="n">hyper_var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;mu_x&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">]</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+
+<span class="n">TG2D</span> <span class="o">=</span> <span class="n">TruncatedGaussian2DAnalytic</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">var_names</span><span class="o">=</span><span class="n">var_names</span><span class="p">,</span> <span class="n">hyper_var_names</span><span class="o">=</span><span class="n">hyper_var_names</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">plot_intrinsic_parameters</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.00199</span><span class="p">);</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">infer</span><span class="p">(</span><span class="n">TG2D</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="n">prior_small_sigma</span><span class="p">)</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">compare_posterior_predictive</span><span class="p">()</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">quantile_posterior_predictive</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_10_0.png" src="_images/FullTruncatedGaussianTests_10_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+No selection function provided
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+sample: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [00:47&lt;00:00, 41.78it/s, 15 steps of size 2.15e-01. acc. prob=0.90]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+                mean       std    median      5.0%     95.0%     n_eff     r_hat
+      mu_x      0.15      0.06      0.17      0.06      0.23    231.20      1.00
+      mu_y      0.24      0.03      0.24      0.20      0.28    190.07      1.02
+       rho      0.11      0.47      0.13     -0.58      0.94    554.98      1.00
+   sigma_x      0.14      0.06      0.13      0.04      0.23    374.50      1.00
+   sigma_y      0.09      0.05      0.08      0.00      0.15    265.01      1.01
+
+Number of divergences: 0
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a838c04673ee4551a4a151ab2279027a", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/var/folders/4g/bjm_kb714yl_6tgcqd4jbmqh0000gn/T/ipykernel_83683/2226853849.py:137: UserWarning: The following kwargs were not used by contour: &#39;axis&#39;
+  axes[1].contourf(data_grid[&#39;x&#39;], data_grid[&#39;y&#39;], Z_init,axis=0)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_10_6.png" src="_images/FullTruncatedGaussianTests_10_6.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_10_7.png" src="_images/FullTruncatedGaussianTests_10_7.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "e09ecc2483f64bc2a8887575e1d6117e", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_10_9.png" src="_images/FullTruncatedGaussianTests_10_9.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[172]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TGT</span> <span class="o">=</span> <span class="n">TruncatedGaussianTests</span><span class="p">(</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.8</span><span class="p">},</span>
+                       <span class="n">sigma_likelihood</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+
+
+<span class="n">prior_small_sigma</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.8</span><span class="p">),</span>
+    <span class="s1">&#39;mu_y&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.8</span><span class="p">),</span>
+    <span class="s1">&#39;rho&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">TGT</span><span class="o">.</span><span class="n">create_data</span><span class="p">();</span>
+
+
+<span class="n">var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
+<span class="n">hyper_var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;mu_x&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">]</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+
+<span class="n">TG2D</span> <span class="o">=</span> <span class="n">TruncatedGaussian2DAnalytic</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">var_names</span><span class="o">=</span><span class="n">var_names</span><span class="p">,</span> <span class="n">hyper_var_names</span><span class="o">=</span><span class="n">hyper_var_names</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">plot_intrinsic_parameters</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.00199</span><span class="p">);</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">infer</span><span class="p">(</span><span class="n">TG2D</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="n">prior_small_sigma</span><span class="p">)</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">compare_posterior_predictive</span><span class="p">()</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">quantile_posterior_predictive</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_11_0.png" src="_images/FullTruncatedGaussianTests_11_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+No selection function provided
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+sample: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [00:49&lt;00:00, 40.55it/s, 15 steps of size 6.03e-02. acc. prob=0.89]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+                mean       std    median      5.0%     95.0%     n_eff     r_hat
+      mu_x      0.79      0.04      0.79      0.74      0.85     34.44      1.04
+      mu_y      0.80      0.02      0.80      0.77      0.83     39.34      1.04
+       rho     -0.86      0.05     -0.87     -0.95     -0.78    100.93      1.00
+   sigma_x      0.23      0.05      0.22      0.18      0.28     41.59      1.03
+   sigma_y      0.12      0.03      0.12      0.09      0.15     68.77      1.02
+
+Number of divergences: 0
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b91447690b6c437c8806f49ca37301a7", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/var/folders/4g/bjm_kb714yl_6tgcqd4jbmqh0000gn/T/ipykernel_83683/2226853849.py:137: UserWarning: The following kwargs were not used by contour: &#39;axis&#39;
+  axes[1].contourf(data_grid[&#39;x&#39;], data_grid[&#39;y&#39;], Z_init,axis=0)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_11_6.png" src="_images/FullTruncatedGaussianTests_11_6.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_11_7.png" src="_images/FullTruncatedGaussianTests_11_7.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "453140bc69644f0296e2da7cfe99023d", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_11_9.png" src="_images/FullTruncatedGaussianTests_11_9.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[173]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TGT</span> <span class="o">=</span> <span class="n">TruncatedGaussianTests</span><span class="p">(</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.8</span><span class="p">},</span>
+                       <span class="n">sigma_likelihood</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+
+
+<span class="n">prior_small_sigma</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.8</span><span class="p">),</span>
+    <span class="s1">&#39;mu_y&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.8</span><span class="p">),</span>
+    <span class="s1">&#39;rho&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">TGT</span><span class="o">.</span><span class="n">create_data</span><span class="p">();</span>
+
+
+<span class="n">var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
+<span class="n">hyper_var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;mu_x&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">]</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+
+<span class="n">TG2D</span> <span class="o">=</span> <span class="n">TruncatedGaussian2DAnalytic</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">var_names</span><span class="o">=</span><span class="n">var_names</span><span class="p">,</span> <span class="n">hyper_var_names</span><span class="o">=</span><span class="n">hyper_var_names</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">plot_intrinsic_parameters</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.00199</span><span class="p">);</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">infer</span><span class="p">(</span><span class="n">TG2D</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="n">prior_small_sigma</span><span class="p">)</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">compare_posterior_predictive</span><span class="p">()</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">quantile_posterior_predictive</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_12_0.png" src="_images/FullTruncatedGaussianTests_12_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+No selection function provided
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+sample: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [01:16&lt;00:00, 25.99it/s, 23 steps of size 8.67e-02. acc. prob=0.93]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+                mean       std    median      5.0%     95.0%     n_eff     r_hat
+      mu_x      0.78      0.11      0.77      0.61      0.96    329.34      1.00
+      mu_y      0.84      0.08      0.83      0.73      0.99    335.49      1.00
+       rho     -0.91      0.14     -0.96     -1.00     -0.78    292.03      1.00
+   sigma_x      0.43      0.18      0.40      0.17      0.72    213.25      1.00
+   sigma_y      0.32      0.14      0.30      0.10      0.56    216.26      1.00
+
+Number of divergences: 0
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6d97e22700ae498fad29a9100930634d", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/var/folders/4g/bjm_kb714yl_6tgcqd4jbmqh0000gn/T/ipykernel_83683/2226853849.py:137: UserWarning: The following kwargs were not used by contour: &#39;axis&#39;
+  axes[1].contourf(data_grid[&#39;x&#39;], data_grid[&#39;y&#39;], Z_init,axis=0)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_12_6.png" src="_images/FullTruncatedGaussianTests_12_6.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_12_7.png" src="_images/FullTruncatedGaussianTests_12_7.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7d2a45b7dd0d4f04bb93345708e19276", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_12_9.png" src="_images/FullTruncatedGaussianTests_12_9.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[174]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TGT</span> <span class="o">=</span> <span class="n">TruncatedGaussianTests</span><span class="p">(</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.8</span><span class="p">},</span>
+                       <span class="n">sigma_likelihood</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+
+
+<span class="n">prior_small_sigma</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.8</span><span class="p">),</span>
+    <span class="s1">&#39;mu_y&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.8</span><span class="p">),</span>
+    <span class="s1">&#39;rho&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">TGT</span><span class="o">.</span><span class="n">create_data</span><span class="p">();</span>
+
+
+<span class="n">var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
+<span class="n">hyper_var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;mu_x&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">]</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+
+<span class="n">TG2D</span> <span class="o">=</span> <span class="n">TruncatedGaussian2DAnalytic</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">var_names</span><span class="o">=</span><span class="n">var_names</span><span class="p">,</span> <span class="n">hyper_var_names</span><span class="o">=</span><span class="n">hyper_var_names</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">plot_intrinsic_parameters</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.00199</span><span class="p">);</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">infer</span><span class="p">(</span><span class="n">TG2D</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="n">prior_small_sigma</span><span class="p">)</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">compare_posterior_predictive</span><span class="p">()</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">quantile_posterior_predictive</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_13_0.png" src="_images/FullTruncatedGaussianTests_13_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+No selection function provided
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+sample: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [01:01&lt;00:00, 32.38it/s, 15 steps of size 1.25e-01. acc. prob=0.90]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+                mean       std    median      5.0%     95.0%     n_eff     r_hat
+      mu_x      0.17      0.07      0.18      0.03      0.28    278.52      1.00
+      mu_y      0.12      0.07      0.12      0.01      0.20    391.30      1.00
+       rho     -0.67      0.36     -0.82     -1.00     -0.10    210.20      1.00
+   sigma_x      0.27      0.18      0.22      0.05      0.59    122.54      1.01
+   sigma_y      0.25      0.14      0.20      0.08      0.52    126.51      1.01
+
+Number of divergences: 0
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "547cfd45387b4aefb75f8ff657c83d7b", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/var/folders/4g/bjm_kb714yl_6tgcqd4jbmqh0000gn/T/ipykernel_83683/2226853849.py:137: UserWarning: The following kwargs were not used by contour: &#39;axis&#39;
+  axes[1].contourf(data_grid[&#39;x&#39;], data_grid[&#39;y&#39;], Z_init,axis=0)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_13_6.png" src="_images/FullTruncatedGaussianTests_13_6.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_13_7.png" src="_images/FullTruncatedGaussianTests_13_7.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ba9fabe66efb4f0c9d95a063bf65e594", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_13_9.png" src="_images/FullTruncatedGaussianTests_13_9.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[175]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="n">TGT</span> <span class="o">=</span> <span class="n">TruncatedGaussianTests</span><span class="p">(</span><span class="n">parameters</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span><span class="mf">0.1</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.8</span><span class="p">},</span>
+                       <span class="n">sigma_likelihood</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+
+<span class="n">prior_small_sigma</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;mu_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_x&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.8</span><span class="p">),</span>
+    <span class="s1">&#39;mu_y&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span>
+    <span class="s1">&#39;sigma_y&#39;</span><span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">0.8</span><span class="p">),</span>
+    <span class="s1">&#39;rho&#39;</span> <span class="p">:</span> <span class="n">dist</span><span class="o">.</span><span class="n">Uniform</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">TGT</span><span class="o">.</span><span class="n">create_data</span><span class="p">();</span>
+
+
+<span class="n">var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">]</span>
+<span class="n">hyper_var_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;mu_x&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_x&#39;</span><span class="p">,</span> <span class="s1">&#39;mu_y&#39;</span><span class="p">,</span> <span class="s1">&#39;sigma_y&#39;</span><span class="p">,</span> <span class="s1">&#39;rho&#39;</span><span class="p">]</span>
+<span class="n">a</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">]</span>
+<span class="n">b</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">]</span>
+
+<span class="n">TG2D</span> <span class="o">=</span> <span class="n">TruncatedGaussian2DAnalytic</span><span class="p">(</span><span class="n">a</span><span class="o">=</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="o">=</span><span class="n">b</span><span class="p">,</span> <span class="n">var_names</span><span class="o">=</span><span class="n">var_names</span><span class="p">,</span> <span class="n">hyper_var_names</span><span class="o">=</span><span class="n">hyper_var_names</span><span class="p">)</span>
+
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">plot_intrinsic_parameters</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.00199</span><span class="p">);</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">infer</span><span class="p">(</span><span class="n">TG2D</span><span class="p">,</span> <span class="n">prior</span><span class="o">=</span><span class="n">prior_small_sigma</span><span class="p">)</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">compare_posterior_predictive</span><span class="p">()</span>
+
+<span class="n">TGT</span><span class="o">.</span><span class="n">quantile_posterior_predictive</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_14_0.png" src="_images/FullTruncatedGaussianTests_14_0.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+No selection function provided
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+sample: 100%|██████████████████████████████████████████████████████████████████████████████████████████████████████████████████████████| 2000/2000 [00:54&lt;00:00, 36.60it/s, 15 steps of size 1.49e-01. acc. prob=0.89]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+                mean       std    median      5.0%     95.0%     n_eff     r_hat
+      mu_x      0.15      0.07      0.16      0.03      0.24    488.43      1.00
+      mu_y      0.16      0.06      0.18      0.04      0.24    322.71      1.01
+       rho     -0.04      0.58     -0.03     -1.00      0.76    437.08      1.00
+   sigma_x      0.17      0.12      0.16      0.00      0.27    284.51      1.01
+   sigma_y      0.13      0.12      0.10      0.00      0.25    256.85      1.00
+
+Number of divergences: 0
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "47edcd7153bd4d7d9ff9a41fd80a40fb", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+/var/folders/4g/bjm_kb714yl_6tgcqd4jbmqh0000gn/T/ipykernel_83683/2226853849.py:137: UserWarning: The following kwargs were not used by contour: &#39;axis&#39;
+  axes[1].contourf(data_grid[&#39;x&#39;], data_grid[&#39;y&#39;], Z_init,axis=0)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_14_6.png" src="_images/FullTruncatedGaussianTests_14_6.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_14_7.png" src="_images/FullTruncatedGaussianTests_14_7.png" />
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "fff264f3acde440c9535f2c303a67442", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="_images/FullTruncatedGaussianTests_14_9.png" src="_images/FullTruncatedGaussianTests_14_9.png" />
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre><span></span>
+</pre></div>
+</div>
+</div>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Asad Hussain.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -6,7 +6,7 @@ import juliacall
 import numpy as np
 from typing import Any, List, Optional
 from .save_load import save_dict_h5, load_dict_h5
-from .transformations import Transformation
+from .transformations import Transformation, QuantileTransformation
 
 @dataclass
 class TGMM:
@@ -216,33 +216,38 @@ class TGMM:
 				'transformed_columns' : T.transformed_columns,
 				'inverse_transformation' : T.inverse_transformation,
 				'ignore_columns' : T.ignore_columns,
-				'extra_funcs' : T.extra_funcs
+				'extra_funcs' : T.extra_funcs,
+				'quantile_transformation' : None
 				}
+			if T.quantile_transformation is not None:
+				q_transform = {'dataframe' : T.quantile_transformation.dataframe, 
+							   'quantiled_columns' : T.quantile_transformation.quantiled_columns}
+				transformation_save['quantile_transformation'] = q_transform
 		else:
 			transformation_save = None
 
 		if 'components' in fit2.data.columns:
-		    thedata = fit2.data.drop('components', axis=1);
-		    component_assignment = fit2.data['components'].values
+			thedata = fit2.data.drop('components', axis=1);
+			component_assignment = fit2.data['components'].values
 		else:
-		    thedata = fit2.data
+			thedata = fit2.data
 
 		tgmm_save = {
-		    'cols' : fit2.cols,
-		    'domain_cols' : fit2.domain_cols,
-		    'image_cols' : fit2.image_cols,
-		    'responsibilities' : np.array([np.array(x) for x in fit2.responsibilities]),
-		    'block_structure' : fit2.block_structure,
-		    'cov' : fit2.cov,
-		    'data' : thedata,
-		    'gmm' : {
-		        'means' : fit2.means, 
-		        'covariances' : fit2.covariances, 
-		        'weights' : fit2.weights, 
-		        'a' : np.array(fit2.gmm.components[0].a), 
-		        'b' : np.array(fit2.gmm.components[0].b)
-		    }
-		    
+			'cols' : fit2.cols,
+			'domain_cols' : fit2.domain_cols,
+			'image_cols' : fit2.image_cols,
+			'responsibilities' : np.array([np.array(x) for x in fit2.responsibilities]),
+			'block_structure' : fit2.block_structure,
+			'cov' : fit2.cov,
+			'data' : thedata,
+			'gmm' : {
+				'means' : fit2.means, 
+				'covariances' : fit2.covariances, 
+				'weights' : fit2.weights, 
+				'a' : np.array(fit2.gmm.components[0].a), 
+				'b' : np.array(fit2.gmm.components[0].b)
+			}
+			
 		}
 
 		tgmm_save['transformation'] = transformation_save
@@ -255,9 +260,12 @@ class TGMM:
 	def load(cls, filename):
 		result = load_dict_h5(filename)
 		if (result.get('transformation', None) is not None):
-		    T = Transformation(**result['transformation'])
+			if result['transformation'].get('quantile_transformation', None) is not None:
+				transformation_result = result['transformation']['quantile_transformation'];
+				result['transformation']['quantile_transformation'] = QuantileTransformation(dataframe=transformation_result['dataframe'], quantiled_columns=transformation_result['quantiled_columns'])
+			T = Transformation(**result['transformation'])
 		else:
-		    T = None
+			T = None
 
 		jl.seval("""
 		using TruncatedGaussianMixtures, Distributions, DataFrames
@@ -270,10 +278,10 @@ class TGMM:
 		""")
 
 		gmm = jl.create_gmm(jl_array(result['gmm']['means']), 
-		                    jl_array(result['gmm']['covariances']), 
-		                    jl_array(result['gmm']['weights']), 
-		                    jl_array(result['gmm']['a']), 
-		                    jl_array(result['gmm']['b']));
+							jl_array(result['gmm']['covariances']), 
+							jl_array(result['gmm']['weights']), 
+							jl_array(result['gmm']['a']), 
+							jl_array(result['gmm']['b']));
 
 		jl.seval("array_to_vec(v) = [v[i,:] for i in 1:size(v,1)]")
 
@@ -281,15 +289,15 @@ class TGMM:
 			result['data']['components'] = result['components']
 
 		obj = cls(gmm = gmm,
-		    cols = result['cols'],
-		    domain_cols= result['domain_cols'],
-		    image_cols= result['image_cols'],
-		    transformation= T,
-		    responsibilities= jl.array_to_vec(jl_array(result['responsibilities'])),
-		    block_structure= result.get('block_structure',None),
-		    cov = result.get('cov',None),
-		    data = result.get('data',None),
-		    sample_weights = result.get('sample_weights',None))
+			cols = result['cols'],
+			domain_cols= result['domain_cols'],
+			image_cols= result['image_cols'],
+			transformation= T,
+			responsibilities= jl.array_to_vec(jl_array(result['responsibilities'])),
+			block_structure= result.get('block_structure',None),
+			cov = result.get('cov',None),
+			data = result.get('data',None),
+			sample_weights = result.get('sample_weights',None))
 
 		return obj
 

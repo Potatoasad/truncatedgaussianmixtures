@@ -1,7 +1,15 @@
 from .julia_import import jl, TruncatedGaussianMixtures
+from .julia_helpers import jl_array
+from .conversions import jl_to_pandas, pandas_to_jl
+import pandas as pd
 from juliacall import convert as jl_convert 
 from dataclasses import dataclass, field
 from typing import List, Dict, Optional
+
+@dataclass
+class QuantileTransformation:
+	dataframe : pd.DataFrame
+	quantiled_columns : Optional[List[str]] = None
 
 @dataclass
 class Transformation:
@@ -11,6 +19,7 @@ class Transformation:
 	inverse_transformation : str
 	ignore_columns : Optional[List[str]] = None
 	extra_funcs : Optional[List[str]] = None ## list of strings of julia functions used in the transformation
+	quantile_transformation : Optional[QuantileTransformation] = None
 
 	def __post_init__(self):
 		if self.ignore_columns is None:
@@ -27,5 +36,20 @@ class Transformation:
 		inverse_transformation_jl = jl.seval(self.inverse_transformation)
 		transformation_jl_out = TruncatedGaussianMixtures.Transformation(input_columns_jl, forward_transformation_jl, transformed_columns_jl, inverse_transformation_jl, ignore_columns=self.ignore_columns)
 		transformation_jl_out_no_ignore = TruncatedGaussianMixtures.Transformation(input_columns_jl, forward_transformation_jl, transformed_columns_jl, inverse_transformation_jl)
-		self.julia_object = transformation_jl_out
-		self.julia_object_no_ignore = transformation_jl_out_no_ignore
+		
+		if self.quantile_transformation is not None:
+			quantile_df = self.quantile_transformation.dataframe
+			self.quantile_transformation_indices_ignored = [i+1 for i,x in enumerate(self.input_columns) if x not in self.quantile_transformation.quantiled_columns]
+			self.julia_object = jl.add_quantile_transformation(transformation_jl_out, pandas_to_jl(quantile_df), ignore_quantile_columns=jl_array(self.quantile_transformation_indices_ignored))
+			self.julia_object_no_ignore = jl.add_quantile_transformation(transformation_jl_out_no_ignore, pandas_to_jl(quantile_df), ignore_quantile_columns=jl_array(self.quantile_transformation_indices_ignored))
+		else:
+			self.julia_object = transformation_jl_out
+			self.julia_object_no_ignore = transformation_jl_out_no_ignore
+
+	def forward(self, df):
+		return jl_to_pandas(jl.forward(self.julia_object, pandas_to_jl(df)))
+
+	def inverse(self, df):
+		return jl_to_pandas(jl.inverse(self.julia_object, pandas_to_jl(df)))
+
+

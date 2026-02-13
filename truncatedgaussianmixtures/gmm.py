@@ -50,7 +50,7 @@ class TGMM:
 
 		if self.data is not None:
 			if self.transformation is not None:
-				self.transformed_data = jl_to_pandas(jl.forward(self.transformation.julia_object, jl.DataFrame(self.data)))
+				self.transformed_data = jl_to_pandas(jl.forward(self.transformation.julia_object, pandas_to_jl(self.data)))
 				self.responsibilities = jl.get_znk(self.gmm, pandas_to_jl(self.transformed_data[self.image_cols]))
 			else:
 				self.responsibilities = jl.get_znk(self.gmm, pandas_to_jl(self.data[self.cols]))

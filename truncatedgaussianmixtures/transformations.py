@@ -10,6 +10,7 @@ from typing import List, Dict, Optional
 class QuantileTransformation:
 	dataframe : pd.DataFrame
 	quantiled_columns : Optional[List[str]] = None
+	n_quantiles : Optional[int] = 1_000
 
 @dataclass
 class Transformation:
@@ -40,8 +41,8 @@ class Transformation:
 		if self.quantile_transformation is not None:
 			quantile_df = self.quantile_transformation.dataframe
 			self.quantile_transformation_indices_ignored = [i+1 for i,x in enumerate(self.input_columns) if x not in self.quantile_transformation.quantiled_columns]
-			self.julia_object = jl.add_quantile_transformation(transformation_jl_out, pandas_to_jl(quantile_df), ignore_quantile_columns=jl_array(self.quantile_transformation_indices_ignored))
-			self.julia_object_no_ignore = jl.add_quantile_transformation(transformation_jl_out_no_ignore, pandas_to_jl(quantile_df), ignore_quantile_columns=jl_array(self.quantile_transformation_indices_ignored))
+			self.julia_object = jl.add_quantile_transformation(transformation_jl_out, pandas_to_jl(quantile_df), ignore_quantile_columns=jl_array(self.quantile_transformation_indices_ignored), n_quantiles=self.quantile_transformation.n_quantiles)
+			self.julia_object_no_ignore = jl.add_quantile_transformation(transformation_jl_out_no_ignore, pandas_to_jl(quantile_df), ignore_quantile_columns=jl_array(self.quantile_transformation_indices_ignored), n_quantiles=self.quantile_transformation.n_quantiles)
 		else:
 			self.julia_object = transformation_jl_out
 			self.julia_object_no_ignore = transformation_jl_out_no_ignore

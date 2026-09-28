@@ -1,7 +1,6 @@
 import os
 import sys
 import warnings
-from .julia_helpers import *
 
 # Check if JuliaCall is already loaded, and if so, warn the user
 # about the relevant environment variables. If not loaded,
@@ -37,7 +36,58 @@ else:
         os.environ[k] = os.environ.get(k, default)
 
 
+# Register TruncatedGaussianMixtures.jl with juliapkg *before* juliacall starts,
+# so that it is part of the resolved Julia environment (juliapkg deletes the
+# Manifest on every re-resolve, so an ad-hoc `Pkg.add`/`Pkg.develop` at runtime
+# does not survive).
+#
+# * TGMM_JULIA_DEV_PATH=/path/to/TruncatedGaussianMixtures.jl  -> `Pkg.develop` that
+#   checkout (the choice is remembered in this Python environment's juliapkg
+#   deps file, so it only needs to be set once).
+# * otherwise the GitHub version at TGMM_JULIA_REV is used (unless a dev
+#   checkout was recorded before).
+TGMM_JULIA_UUID = "d6a30cd5-d352-42fd-9418-e34000539a5a"
+TGMM_JULIA_URL = "https://github.com/Potatoasad/TruncatedGaussianMixtures.jl"
+# the JAX backend needs the matching Julia branch; switch back to "main" once it is merged there
+TGMM_JULIA_REV = "jax-backend"
+
+
+def _register_tgmm_julia_package():
+    import juliapkg
+
+    dev_path = os.environ.get("TGMM_JULIA_DEV_PATH")
+    current = juliapkg.deps.load_cur_deps().get("packages", {}).get("TruncatedGaussianMixtures")
+    if dev_path:
+        wanted = {"uuid": TGMM_JULIA_UUID, "dev": True, "path": os.path.abspath(os.path.expanduser(dev_path))}
+    elif current is None or not current.get("dev"):
+        wanted = {"uuid": TGMM_JULIA_UUID, "url": TGMM_JULIA_URL, "rev": TGMM_JULIA_REV}
+    else:
+        return
+    if current != wanted:
+        spec = {k: v for k, v in wanted.items() if k != "uuid"}
+        juliapkg.add("TruncatedGaussianMixtures", TGMM_JULIA_UUID, **spec)
+
+
+REVISE_UUID = "295af30f-e4ad-537b-8983-00126c2a3abe"
+# TGMM_JULIA_REVISE=1: load Revise before the package so that edits to a
+# developed TruncatedGaussianMixtures.jl checkout take effect in a running
+# Python/Jupyter session.
+_USE_REVISE = os.environ.get("TGMM_JULIA_REVISE", "") not in ("", "0", "no", "false")
+
+
+def _register_revise():
+    import juliapkg
+    if "Revise" not in juliapkg.deps.load_cur_deps().get("packages", {}):
+        juliapkg.add("Revise", REVISE_UUID)
+
+
+if "juliacall" not in sys.modules:
+    _register_tgmm_julia_package()
+    if _USE_REVISE:
+        _register_revise()
+
 from juliacall import Main as jl  # type: ignore
+from .julia_helpers import *
 
 jl_version = (jl.VERSION.major, jl.VERSION.minor, jl.VERSION.patch)
 
@@ -67,30 +117,29 @@ elif autoload_extensions not in {"no", "yes", ""}:
 jl.seval("using Pkg: Pkg")
 Pkg = jl.Pkg
 
-needed_pkgs = ["Distributions", "LogExpFunctions", "Clustering", "LinearAlgebra", "Distributions", "MvNormalCDF", 
-               "StatsBase", "InvertedIndices", "ProgressMeter", "DataFrames", "DiffRules", "ForwardDiff", "Roots"]
 
-def force_install_tgmm(force=True, install_pkgs=False, needed_pkgs=needed_pkgs):
-    if force:
-        Pkg.rm("TruncatedGaussianMixtures")
-    if install_pkgs:
-        Pkg.add(url="https://github.com/Potatoasad/TruncatedGaussianMixtures.jl")
-        for pkgname in needed_pkgs:
-            Pkg.add(pkgname)
+def force_install_tgmm(force=True, install_pkgs=False, needed_pkgs=None):
+    """Re-resolve the Julia environment (TGMM is managed through juliapkg now)."""
+    import juliapkg
+    juliapkg.resolve(force=True)
 
-#Pkg.rm("TruncatedGaussianMixtures")
-#Pkg.add(url="https://github.com/Potatoasad/TruncatedGaussianMixtures.jl")
 
-### DEV 
-#Pkg.develop(path="/Users/asadh/Documents/Github/TruncatedGaussianMixtures.jl" ,io=jl.devnull)
-
-## Check if TGM is installed:
-tgmm_is_installed = any( x.name == "TruncatedGaussianMixtures" for x in jl.values(jl.Pkg.dependencies()) )
-if not tgmm_is_installed:
-    print("Installing TruncatedGaussianMixtures")
-    force_install_tgmm(force=False, install_pkgs=True, needed_pkgs=needed_pkgs)
-    
-
+if _USE_REVISE:
+    jl.seval("using Revise")
 jl.seval("using TruncatedGaussianMixtures: TruncatedGaussianMixtures")
 jl.seval("using TruncatedGaussianMixtures")
+# The legacy TGMM object loaded these into Julia's Main on construction, and user
+# code (e.g. custom `jl.seval` helpers using MvNormal / diag) relies on them.
+jl.seval("using LinearAlgebra, Distributions")
 TruncatedGaussianMixtures = jl.TruncatedGaussianMixtures
+
+
+def revise():
+    """Apply pending edits of a developed TruncatedGaussianMixtures.jl (needs TGMM_JULIA_REVISE=1).
+
+    Revise's file watchers are Julia tasks, which only run when Julia yields,
+    so give them a moment before revising.
+    """
+    if not _USE_REVISE:
+        raise RuntimeError("set TGMM_JULIA_REVISE=1 before importing truncatedgaussianmixtures")
+    jl.seval("sleep(0.05); Revise.revise(; throw=true)")
